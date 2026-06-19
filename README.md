@@ -54,11 +54,11 @@ XGBoost outperformed all alternatives by a significant margin. Classical time-se
 
 | Notebook | Contents |
 |---|---|
-| [eda.ipynb](notebooks/eda.ipynb) | Distributions, seasonality patterns, product-level trend analysis |
-| [models.ipynb](notebooks/models.ipynb) | Multi-model comparison with TimeSeriesSplit CV and residual analysis |
-| [xgboost.ipynb](notebooks/xgboost.ipynb) | Optuna hyperparameter tuning, final training, prediction, Excel export |
+| [01_eda.ipynb](notebooks/01_eda.ipynb) | EDA: distributions, seasonality, ACF/PACF, product coverage |
+| [02_model_comparison.ipynb](notebooks/02_model_comparison.ipynb) | Baseline comparison of 6 models; justifies XGBoost selection |
+| [03_xgboost.ipynb](notebooks/03_xgboost.ipynb) | Optuna hyperparameter tuning, final training, prediction, Excel export |
 
-Run in order: `eda.ipynb` → `models.ipynb` → `xgboost.ipynb`
+Run in order: `01` → `02` → `03` → `04` → `05`
 
 ## Setup
 
@@ -66,7 +66,7 @@ Run in order: `eda.ipynb` → `models.ipynb` → `xgboost.ipynb`
 pip install -r requirements.txt
 ```
 
-The final notebook (`xgboost.ipynb`) reads `test_data_working_students.xlsx` and writes predictions to `forecasted_results.xlsx`.
+`03_xgboost.ipynb` and `04_lightgbm.ipynb` each read `test_data_working_students.xlsx` and writes predictions to `forecasted_results.xlsx`.
 
 ## Key Findings
 
