@@ -5,9 +5,15 @@ import pandas as pd
 from .features import GROUP_COLS, DATA_SPLIT_ROW
 
 
+_REQUIRED_COLS = {'year', 'month', 'Value', 'Packs', 'MoleculeName', 'TradeName', 'ProductName'}
+
+
 def load_data(path: str | Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load Excel workbook and split into historical and future DataFrames."""
     df = pd.read_excel(path)
+    missing = _REQUIRED_COLS - set(df.columns)
+    if missing:
+        raise ValueError(f"Input file is missing required columns: {sorted(missing)}")
     historical = df.iloc[:DATA_SPLIT_ROW].dropna().copy()
     future     = df.iloc[DATA_SPLIT_ROW:].copy()
     return historical, future

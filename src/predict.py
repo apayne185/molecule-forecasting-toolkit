@@ -6,6 +6,10 @@ import openpyxl
 
 from .features import FEATURES, CAT_FEATURES, START_ROW_EXCEL, MAX_FORECAST_ROWS
 
+# Excel template layout: G = Value forecast column, H = Packs forecast column
+_VALUE_COL = 'G'
+_PACKS_COL = 'H'
+
 
 def generate_forecasts(
     model_value,
@@ -41,8 +45,8 @@ def save_to_excel(
         )
 
     for i, (val, pack) in enumerate(zip(values, packs), start=START_ROW_EXCEL):
-        ws[f'G{i}'] = val
-        ws[f'H{i}'] = pack
+        ws[f'{_VALUE_COL}{i}'] = val
+        ws[f'{_PACKS_COL}{i}'] = pack
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_path)

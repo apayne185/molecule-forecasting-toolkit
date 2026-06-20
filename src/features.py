@@ -11,7 +11,6 @@ GROUP_COLS   = ['MoleculeName', 'TradeName', 'ProductName']
 TARGET_VALUE = 'Value'
 TARGET_PACKS = 'Packs'
 
-DATA_SPLIT_ROW    = 4260
-FORECAST_YEAR     = 2021
-START_ROW_EXCEL   = 4261
+DATA_SPLIT_ROW    = 4260  # rows 0–4259 are historical (Dec 2017 – Dec 2020)
+START_ROW_EXCEL   = 4261  # 1-indexed Excel row where forecast range starts
 MAX_FORECAST_ROWS = 1339
