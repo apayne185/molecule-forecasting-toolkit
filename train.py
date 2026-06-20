@@ -28,6 +28,10 @@ from src import (
     evaluate,
     generate_forecasts,
     save_to_excel,
+    train_quantile_bounds,
+    prediction_interval,
+    coverage,
+    mean_interval_width,
 )
 
 DATA_PATH     = Path('data/test_data_working_students.xlsx')
@@ -50,6 +54,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument('--trials',    default=50, type=int, help='Optuna trials per target')
     p.add_argument('--seed',      default=42,  type=int, help='Random seed')
     p.add_argument('--model-dir', default='models', help='Directory for saved models (default: models/)')
+    p.add_argument('--intervals', action='store_true',
+                   help='Also train q10/q90 quantile models and report hold-out coverage')
     return p.parse_args()
 
 
@@ -80,25 +86,31 @@ def main() -> None:
              f'{len(X_train):,}', f'{len(X_test):,}', len(FEATURES))
 
     # ── 3. Hyperparameter tuning ──────────────────────────────────────────────
+    # Tune on the training split only so hyperparameter search never sees X_test
     log.info('[3/5] Tuning %s — %d trials per target', args.model.upper(), args.trials)
 
     log.info('      → Value target')
-    best_params_value = tune(args.model, X, y_value, n_trials=args.trials, seed=args.seed)
+    best_params_value = tune(args.model, X_train, y_train_value, n_trials=args.trials, seed=args.seed)
 
     log.info('      → Packs target')
-    best_params_packs = tune(args.model, X, y_packs, n_trials=args.trials, seed=args.seed)
+    best_params_packs = tune(args.model, X_train, y_train_packs, n_trials=args.trials, seed=args.seed)
 
     # ── 4. Train & evaluate ───────────────────────────────────────────────────
-    log.info('[4/5] Training final models on full historical dataset')
+    log.info('[4/5] Training final models')
 
     train_fn = train_lgb if args.model == 'lgb' else train_xgb
-    model_value = train_fn(X, y_value, best_params_value)
-    model_packs = train_fn(X, y_packs, best_params_packs)
 
-    rmse_value, _ = evaluate(model_value, X_test, y_test_value)
-    rmse_packs, _ = evaluate(model_packs, X_test, y_test_packs)
+    # Eval models trained on X_train → honest hold-out RMSE on X_test
+    eval_value = train_fn(X_train, y_train_value, best_params_value)
+    eval_packs = train_fn(X_train, y_train_packs, best_params_packs)
+    rmse_value, _ = evaluate(eval_value, X_test, y_test_value)
+    rmse_packs, _ = evaluate(eval_packs, X_test, y_test_packs)
     log.info('      Hold-out RMSE — Value: %s', f'{rmse_value:>12,.0f}')
     log.info('      Hold-out RMSE — Packs: %s', f'{rmse_packs:>12,.0f}')
+
+    # Production models retrained on full X for best forecasting performance
+    model_value = train_fn(X, y_value, best_params_value)
+    model_packs = train_fn(X, y_packs, best_params_packs)
 
     model_dir = Path(args.model_dir)
     model_dir.mkdir(parents=True, exist_ok=True)
@@ -106,6 +118,38 @@ def main() -> None:
     joblib.dump(model_packs, model_dir / f'{args.model}_packs.pkl')
     log.info('      Saved  models → %s/%s_value.pkl, %s/%s_packs.pkl',
              model_dir, args.model, model_dir, args.model)
+
+    if args.intervals:
+        log.info('      Training 10th/90th percentile quantile models')
+
+        # Eval quantile models on X_train for honest coverage on X_test
+        lower_v_eval, upper_v_eval = train_quantile_bounds(
+            X_train, y_train_value, best_params_value, model_type=args.model)
+        lower_p_eval, upper_p_eval = train_quantile_bounds(
+            X_train, y_train_packs, best_params_packs, model_type=args.model)
+
+        lb_v, ub_v = prediction_interval(lower_v_eval, upper_v_eval, X_test)
+        lb_p, ub_p = prediction_interval(lower_p_eval, upper_p_eval, X_test)
+
+        cov_v = coverage(y_test_value, lb_v, ub_v)
+        cov_p = coverage(y_test_packs, lb_p, ub_p)
+        width_v = mean_interval_width(lb_v, ub_v)
+        width_p = mean_interval_width(lb_p, ub_p)
+        log.info('      Interval coverage — Value: %.1f%%  Packs: %.1f%%', cov_v * 100, cov_p * 100)
+        log.info('      Mean width       — Value: %s  Packs: %s',
+                 f'{width_v:,.0f}', f'{width_p:,.0f}')
+
+        # Production quantile models on full X for Jan 2021 forecasts
+        lower_v, upper_v = train_quantile_bounds(
+            X, y_value, best_params_value, model_type=args.model)
+        lower_p, upper_p = train_quantile_bounds(
+            X, y_packs, best_params_packs, model_type=args.model)
+
+        joblib.dump(lower_v, model_dir / f'{args.model}_value_q10.pkl')
+        joblib.dump(upper_v, model_dir / f'{args.model}_value_q90.pkl')
+        joblib.dump(lower_p, model_dir / f'{args.model}_packs_q10.pkl')
+        joblib.dump(upper_p, model_dir / f'{args.model}_packs_q90.pkl')
+        log.info('      Saved  quantile models → %s/', model_dir)
 
     # ── 5. Forecast & save ────────────────────────────────────────────────────
     log.info('[5/5] Generating forecasts → %s', args.output)

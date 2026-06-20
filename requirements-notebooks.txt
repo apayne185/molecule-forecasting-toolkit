@@ -1,0 +1,4 @@
+-r requirements.txt
+seaborn>=0.13.0
+statsmodels>=0.14.0
+prophet==1.1.6
