@@ -6,3 +6,5 @@ __pycache__/
 .DS_Store
 forecasted_results*.xlsx
 data/forecasted_results*.xlsx
+*.pkl
+.pytest_cache/

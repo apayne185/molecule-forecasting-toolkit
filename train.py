@@ -12,6 +12,8 @@ import argparse
 import time
 from pathlib import Path
 
+import joblib
+
 from src import (
     load_data,
     engineer_features,
@@ -38,7 +40,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument('--output', default=str(OUTPUT_PATH), help='Path for output Excel file')
     p.add_argument('--model',  default='lgb', choices=['lgb', 'xgb'], help='Model type')
     p.add_argument('--trials', default=50, type=int, help='Optuna trials per target')
-    p.add_argument('--seed',   default=42,  type=int, help='Random seed')
+    p.add_argument('--seed',      default=42,      type=int, help='Random seed')
+    p.add_argument('--model-dir', default='models', help='Directory for saved models (default: models/)')
     return p.parse_args()
 
 
@@ -86,6 +89,12 @@ def main() -> None:
     rmse_packs, _ = evaluate(model_packs, X_test, y_test_packs)
     print(f"      Hold-out RMSE — Value: {rmse_value:>12,.0f}")
     print(f"      Hold-out RMSE — Packs: {rmse_packs:>12,.0f}")
+
+    model_dir = Path(args.model_dir)
+    model_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model_value, model_dir / f'{args.model}_value.pkl')
+    joblib.dump(model_packs, model_dir / f'{args.model}_packs.pkl')
+    print(f"      Saved  models → {model_dir}/{args.model}_value.pkl, {model_dir}/{args.model}_packs.pkl")
 
     # ── 5. Forecast & save ────────────────────────────────────────────────────
     print(f"\n[5/5] Generating forecasts and saving to {args.output}")
