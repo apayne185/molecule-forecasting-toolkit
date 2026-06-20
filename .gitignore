@@ -1,1 +1,6 @@
 test_intstructions.txt
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.DS_Store
