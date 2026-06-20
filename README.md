@@ -65,7 +65,11 @@ Run notebooks in order: `01` → `02` → `03` → `04` → `05`
 ## Setup
 
 ```bash
+# Core dependencies (required for src/ module, pipeline, and tests)
 pip install -r requirements.txt
+
+# Additional dependencies for running all notebooks (prophet, statsmodels, seaborn)
+pip install -r requirements-notebooks.txt
 ```
 
 ### Notebooks
