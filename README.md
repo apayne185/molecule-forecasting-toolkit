@@ -57,7 +57,7 @@ XGBoost outperformed all alternatives by a significant margin. Classical time-se
 | [01_eda.ipynb](notebooks/01_eda.ipynb) | EDA: distributions, seasonality, ACF/PACF, product coverage |
 | [02_model_comparison.ipynb](notebooks/02_model_comparison.ipynb) | Baseline comparison of 6 models; justifies XGBoost selection |
 | [03_xgboost.ipynb](notebooks/03_xgboost.ipynb) | XGBoost with Optuna tuning, final training, and Excel export |
-| [04_lightgbm.ipynb](notebooks/04_lightgbm.ipynb) | LightGBM with native categorical encoding, Optuna tuning, comparison vs XGBoost |
+| [04_lightgbm.ipynb](notebooks/04_lightgbm.ipynb) | LightGBM with native categorical encoding, Optuna tuning, 80% quantile prediction intervals, comparison vs XGBoost |
 | [05_business_insights.ipynb](notebooks/05_business_insights.ipynb) | YoY growth, price-per-pack analysis, market concentration (Lorenz/Gini), seasonality heatmap |
 
 Run notebooks in order: `01` → `02` → `03` → `04` → `05`
@@ -81,7 +81,9 @@ python train.py --trials 5          # quick smoke test
 python train.py --output results.xlsx
 ```
 
-The pipeline runs all five stages end-to-end (load → feature engineering → Optuna tuning → train & evaluate → forecast) and writes predictions to `data/forecasted_results_pipeline.xlsx`. The reusable `src/` module exposes the same logic — `load_data`, `engineer_features`, `tune`, `train_lgb`, `train_xgb`, `generate_forecasts` — for use in downstream scripts or services.
+The pipeline runs all five stages end-to-end (load → feature engineering → Optuna tuning → train & evaluate → forecast) and writes predictions to `data/forecasted_results_pipeline.xlsx`. Add `--intervals` to also train quantile models and report 80% prediction interval coverage on the hold-out set.
+
+The reusable `src/` module exposes the same logic — `load_data`, `engineer_features`, `tune`, `train_lgb`, `train_xgb`, `generate_forecasts`, `train_quantile_bounds`, `coverage` — for use in downstream scripts or services.
 
 ## Key Findings
 

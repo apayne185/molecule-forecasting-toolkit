@@ -28,6 +28,10 @@ from src import (
     evaluate,
     generate_forecasts,
     save_to_excel,
+    train_quantile_bounds,
+    prediction_interval,
+    coverage,
+    mean_interval_width,
 )
 
 DATA_PATH     = Path('data/test_data_working_students.xlsx')
@@ -50,6 +54,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument('--trials',    default=50, type=int, help='Optuna trials per target')
     p.add_argument('--seed',      default=42,  type=int, help='Random seed')
     p.add_argument('--model-dir', default='models', help='Directory for saved models (default: models/)')
+    p.add_argument('--intervals', action='store_true',
+                   help='Also train q10/q90 quantile models and report hold-out coverage')
     return p.parse_args()
 
 
@@ -106,6 +112,28 @@ def main() -> None:
     joblib.dump(model_packs, model_dir / f'{args.model}_packs.pkl')
     log.info('      Saved  models → %s/%s_value.pkl, %s/%s_packs.pkl',
              model_dir, args.model, model_dir, args.model)
+
+    if args.intervals:
+        log.info('      Training 10th/90th percentile quantile models')
+        lower_v, upper_v = train_quantile_bounds(X, y_value, best_params_value, model_type=args.model)
+        lower_p, upper_p = train_quantile_bounds(X, y_packs,  best_params_packs,  model_type=args.model)
+
+        lb_v, ub_v = prediction_interval(lower_v, upper_v, X_test)
+        lb_p, ub_p = prediction_interval(lower_p, upper_p, X_test)
+
+        cov_v = coverage(y_test_value, lb_v, ub_v)
+        cov_p = coverage(y_test_packs, lb_p, ub_p)
+        width_v = mean_interval_width(lb_v, ub_v)
+        width_p = mean_interval_width(lb_p, ub_p)
+        log.info('      Interval coverage — Value: %.1f%%  Packs: %.1f%%', cov_v * 100, cov_p * 100)
+        log.info('      Mean width       — Value: %s  Packs: %s',
+                 f'{width_v:,.0f}', f'{width_p:,.0f}')
+
+        joblib.dump(lower_v, model_dir / f'{args.model}_value_q10.pkl')
+        joblib.dump(upper_v, model_dir / f'{args.model}_value_q90.pkl')
+        joblib.dump(lower_p, model_dir / f'{args.model}_packs_q10.pkl')
+        joblib.dump(upper_p, model_dir / f'{args.model}_packs_q90.pkl')
+        log.info('      Saved  quantile models → %s/', model_dir)
 
     # ── 5. Forecast & save ────────────────────────────────────────────────────
     log.info('[5/5] Generating forecasts → %s', args.output)
