@@ -1,1 +1,10 @@
 test_intstructions.txt
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.DS_Store
+forecasted_results*.xlsx
+data/forecasted_results*.xlsx
+*.pkl
+.pytest_cache/
