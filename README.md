@@ -24,7 +24,7 @@ Given 36 months of historical sales data (December 2017 – December 2020) for a
 - **Temporal:** month, quarter, ISO week-of-year
 - **Rolling statistics:** 3-month and 6-month rolling means per product (molecule × brand × SKU)
 - **Lag features:** 1-month lag values per product series
-- **Categorical encoding:** one-hot encoding of molecule, brand, and SKU identity (243 binary features)
+- **Categorical encoding:** native categorical features in LightGBM (13 features); one-hot encoding in XGBoost baseline (243 binary features)
 - **Validation strategy:** time-series-aware cross-validation (`TimeSeriesSplit`, 5 folds) — no future data leaks into training splits
 
 ### Model Comparison
@@ -56,9 +56,11 @@ XGBoost outperformed all alternatives by a significant margin. Classical time-se
 |---|---|
 | [01_eda.ipynb](notebooks/01_eda.ipynb) | EDA: distributions, seasonality, ACF/PACF, product coverage |
 | [02_model_comparison.ipynb](notebooks/02_model_comparison.ipynb) | Baseline comparison of 6 models; justifies XGBoost selection |
-| [03_xgboost.ipynb](notebooks/03_xgboost.ipynb) | Optuna hyperparameter tuning, final training, prediction, Excel export |
+| [03_xgboost.ipynb](notebooks/03_xgboost.ipynb) | XGBoost with Optuna tuning, final training, and Excel export |
+| [04_lightgbm.ipynb](notebooks/04_lightgbm.ipynb) | LightGBM with native categorical encoding, Optuna tuning, comparison vs XGBoost |
+| [05_business_insights.ipynb](notebooks/05_business_insights.ipynb) | YoY growth, price-per-pack analysis, market concentration (Lorenz/Gini), seasonality heatmap |
 
-Run in order: `01` → `02` → `03` → `04` → `05`
+Run notebooks in order: `01` → `02` → `03` → `04` → `05`
 
 ## Setup
 
@@ -66,7 +68,20 @@ Run in order: `01` → `02` → `03` → `04` → `05`
 pip install -r requirements.txt
 ```
 
-`03_xgboost.ipynb` and `04_lightgbm.ipynb` each read `test_data_working_students.xlsx` and writes predictions to `forecasted_results.xlsx`.
+### Notebooks
+
+Each notebook is self-contained. Run cells top-to-bottom; data files are read from `data/`.
+
+### Production pipeline
+
+```bash
+python train.py                     # LightGBM, 50 Optuna trials (default)
+python train.py --model xgb         # XGBoost instead
+python train.py --trials 5          # quick smoke test
+python train.py --output results.xlsx
+```
+
+The pipeline runs all five stages end-to-end (load → feature engineering → Optuna tuning → train & evaluate → forecast) and writes predictions to `data/forecasted_results_pipeline.xlsx`. The reusable `src/` module exposes the same logic — `load_data`, `engineer_features`, `tune`, `train_lgb`, `train_xgb`, `generate_forecasts` — for use in downstream scripts or services.
 
 ## Key Findings
 

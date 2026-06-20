@@ -36,6 +36,7 @@ def _lgb_objective(trial, X, y) -> float:
 def _xgb_objective(trial, X, y) -> float:
     params = {
         'objective':        'reg:squarederror',
+        'enable_categorical': True,
         'n_estimators':     trial.suggest_int('n_estimators', 100, 500),
         'learning_rate':    trial.suggest_float('learning_rate', 0.01, 0.2, log=True),
         'max_depth':        trial.suggest_int('max_depth', 3, 10),
@@ -95,7 +96,7 @@ def train_lgb(X, y, params: dict) -> lgb.LGBMRegressor:
 
 def train_xgb(X, y, params: dict) -> xgb.XGBRegressor:
     """Train XGBoost on full dataset with the given hyperparameters."""
-    model = xgb.XGBRegressor(**params, objective='reg:squarederror')
+    model = xgb.XGBRegressor(**params, objective='reg:squarederror', enable_categorical=True)
     model.fit(X, y)
     return model
 

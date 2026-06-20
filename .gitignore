@@ -4,3 +4,5 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 .DS_Store
+forecasted_results*.xlsx
+data/forecasted_results*.xlsx

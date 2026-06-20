@@ -67,7 +67,7 @@ def get_future_features(
             'Packs_RollingMean_3': g['Packs'].tail(3).mean(),
             'Value_RollingMean_6': g['Value'].tail(6).mean(),
             'Packs_RollingMean_6': g['Packs'].tail(6).mean(),
-        }))
+        }), include_groups=False)
         .reset_index()
     )
 
