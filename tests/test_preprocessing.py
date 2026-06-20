@@ -1,8 +1,24 @@
+from unittest.mock import patch
+
 import pandas as pd
 import pytest
 
 from src.features import CAT_FEATURES, FEATURES, GROUP_COLS
-from src.preprocessing import engineer_features, get_future_features
+from src.preprocessing import engineer_features, get_future_features, load_data
+
+
+class TestLoadData:
+    def test_raises_on_missing_required_columns(self):
+        incomplete = pd.DataFrame({'year': [2020], 'month': [1]})
+        with patch('src.preprocessing.pd.read_excel', return_value=incomplete):
+            with pytest.raises(ValueError, match='missing required columns'):
+                load_data('dummy.xlsx')
+
+    def test_error_names_the_missing_column(self):
+        incomplete = pd.DataFrame({'year': [2020], 'month': [1]})
+        with patch('src.preprocessing.pd.read_excel', return_value=incomplete):
+            with pytest.raises(ValueError, match='Packs'):
+                load_data('dummy.xlsx')
 
 
 class TestEngineerFeatures:

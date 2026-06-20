@@ -1,7 +1,65 @@
 import numpy as np
+import pandas as pd
 import pytest
 
-from src.uncertainty import coverage, mean_interval_width, prediction_interval
+from src.features import FEATURES
+from src.uncertainty import (
+    coverage,
+    mean_interval_width,
+    prediction_interval,
+    train_quantile_bounds,
+)
+
+
+def _make_feature_df(n: int = 20) -> pd.DataFrame:
+    rng = np.random.default_rng(42)
+    months = [i % 12 + 1 for i in range(n)]
+    df = pd.DataFrame({
+        'year':                [2020] * n,
+        'month':               months,
+        'quarter':             [(m - 1) // 3 + 1 for m in months],
+        'week_of_year':        [1] * n,
+        'Value_Lag1':          rng.uniform(1000, 5000, n),
+        'Packs_Lag1':          rng.uniform(100, 500, n),
+        'Value_RollingMean_3': rng.uniform(1000, 5000, n),
+        'Packs_RollingMean_3': rng.uniform(100, 500, n),
+        'Value_RollingMean_6': rng.uniform(1000, 5000, n),
+        'Packs_RollingMean_6': rng.uniform(100, 500, n),
+        'MoleculeName':        pd.Categorical(['MolA', 'MolB'] * (n // 2)),
+        'TradeName':           pd.Categorical(['TradeX', 'TradeY'] * (n // 2)),
+        'ProductName':         pd.Categorical(['Prod1', 'Prod2'] * (n // 2)),
+    })
+    return df[FEATURES]
+
+
+_LGB_PARAMS = {'n_estimators': 5, 'num_leaves': 7}
+_Y_QR = np.random.default_rng(99).uniform(1000, 5000, 20)
+
+
+class TestTrainQuantileBounds:
+    def test_returns_two_models_lgb(self):
+        X = _make_feature_df()
+        lower, upper = train_quantile_bounds(X, _Y_QR, _LGB_PARAMS, model_type='lgb')
+        assert lower is not None and upper is not None
+
+    def test_predict_shape_lgb(self):
+        X = _make_feature_df()
+        lower, upper = train_quantile_bounds(X, _Y_QR, _LGB_PARAMS, model_type='lgb')
+        lb, ub = lower.predict(X), upper.predict(X)
+        assert lb.shape == (20,) and ub.shape == (20,)
+
+    def test_lower_q_below_upper_q_on_average(self):
+        X = _make_feature_df()
+        lower, upper = train_quantile_bounds(
+            X, _Y_QR, _LGB_PARAMS, lower_q=0.1, upper_q=0.9, model_type='lgb'
+        )
+        lb, ub = lower.predict(X), upper.predict(X)
+        assert np.mean(lb) < np.mean(ub)
+
+    def test_invalid_model_type_raises(self):
+        X = _make_feature_df()
+        with pytest.raises(ValueError, match='model_type'):
+            train_quantile_bounds(X, _Y_QR, _LGB_PARAMS, model_type='invalid')
 
 
 class _ConstantModel:
