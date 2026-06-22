@@ -74,7 +74,7 @@ Gradient boosting (both XGBoost and LightGBM) outperformed all alternatives by a
 | [05_business_insights.ipynb](notebooks/05_business_insights.ipynb) | YoY growth, price-per-pack analysis, market concentration (Lorenz/Gini), seasonality heatmap |
 | [06_shap.ipynb](notebooks/06_shap.ipynb) | SHAP interpretability: global feature importance, beeswarm, single-prediction waterfall, dependence plot |
 
-Each notebook is self-contained and can be run independently; `01` → `05` is the recommended reading order.
+Each notebook is self-contained and can be run independently; `01` → `06` is the recommended reading order.
 
 ## Setup
 
