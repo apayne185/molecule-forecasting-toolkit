@@ -72,8 +72,9 @@ Gradient boosting (both XGBoost and LightGBM) outperformed all alternatives by a
 | [03_xgboost.ipynb](notebooks/03_xgboost.ipynb) | XGBoost with Optuna tuning, final training, and Excel export |
 | [04_lightgbm.ipynb](notebooks/04_lightgbm.ipynb) | LightGBM with native categorical encoding, Optuna tuning, 80% quantile prediction intervals, comparison vs XGBoost |
 | [05_business_insights.ipynb](notebooks/05_business_insights.ipynb) | YoY growth, price-per-pack analysis, market concentration (Lorenz/Gini), seasonality heatmap |
+| [06_shap.ipynb](notebooks/06_shap.ipynb) | SHAP interpretability: global feature importance, beeswarm, single-prediction waterfall, dependence plot |
 
-Each notebook is self-contained and can be run independently; `01` → `05` is the recommended reading order.
+Each notebook is self-contained and can be run independently; `01` → `06` is the recommended reading order.
 
 ## Setup
 
@@ -108,3 +109,4 @@ The reusable `src/` module exposes the same logic — `load_data`, `engineer_fea
 - **SKU identity** (`ProductName`) is the strongest categorical predictor, confirming that product-level historical behaviour is more informative than molecule or brand groupings alone
 - **Classical time-series models underperform** because the task is inherently multi-series (panel data): SARIMA and Prophet treat the aggregated dataset as a single series and lose the per-product structure that tree models exploit naturally
 - **Optuna vs. GridSearchCV:** Bayesian optimisation (Optuna, 50 trials) achieved lower MSE than GridSearchCV (100+ combinations) in roughly the same wall time, validating the use of TPE sampling over exhaustive search for this parameter space
+- **SHAP confirms the momentum hypothesis:** `Value_RollingMean_3` has by far the largest mean |SHAP value| — short-term product momentum dominates over calendar seasonality and molecule/brand-level features. SKU identity (`ProductName`) contributes a stable per-product baseline offset, making every forecast fully auditable
